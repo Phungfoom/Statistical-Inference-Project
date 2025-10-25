@@ -1,0 +1,15 @@
+---
+title: "Thomas Questions"
+author: "Thomas Linden"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: paper
+    highlight: rstudio
+---
+
+# Import Dataset
+```{r}
+dataset <- read.csv('in-vehicle-coupon-rec.csv')
+```
+

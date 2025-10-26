@@ -1,0 +1,54 @@
+---
+title: "Phung Questions"
+author: "Phung Tran"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(tidyverse)
+```
+
+```{r}
+coupon_data <- read.csv("in-vehicle-coupon-recommendation.csv")
+head(coupon_data)
+```
+
+**Q3**
+
+**$H_o$:** Travel time and direction have no effect on mean acceptance.
+
+**$H_a$:** Travel time or direction significantly affect acceptance rates.
+
+```{r}
+# multiple bootstrap comparisons
+```
+
+```{r}
+# two way ANNOVA
+```
+
+```{r}
+# contingency table
+```
+
+**Q7**
+
+**$H_o$:** Weather and temperature have no effect on acceptance.
+
+**$H_a$:** Weather or temperature significantly affect acceptance.
+
+```{r}
+# two way ANNOVA
+```
+
+```{r}
+# contingency table
+```
+
+

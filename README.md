@@ -1,17 +1,17 @@
 # Research Questions
 
-### Oumayma - Questions
+### Oumayma - Questions 2 & 4
 
 ### John - Questions 1 & 5
 
-### Phung - Questions 3,7
+### Phung - Questions 3 & 7
 
-### Thomas - Questions
+### Thomas - Questions 6 & 8
 
 ### Statistical Inference Final — Variable Descriptions, Analysis Methods, and Hypotheses
 
 | **\#** | **Research Question** | **Variables (Description)** | **Data Type** | **Planned Method of Analysis** | **Hypotheses (H₀ / Hₐ)** |
-|:----------:|:-----------|:-----------|:-----------|:-----------|:-----------|
+|:--:|:---|:---|:---|:---|:---|
 | **1** | Does expiration length affect acceptance? | `expiration` (categorical: 1 day vs 2 hours); `acceptance` (binary: yes/no) | Two-level categorical predictor on binary response | **Bootstrap test** for difference in proportions between expiration groups | **H₀:** Mean acceptance is equal for 1-day and 2-hour coupons.<br>**Hₐ:** Mean acceptance differs between expiration lengths. |
 | **2** | Does time of day relate to acceptance? | `time` (categorical: 5 levels — morning, afternoon, evening, late night, unknown); `acceptance` (binary) | Multi-level categorical on binary outcome | **One-way ANOVA** on mean acceptance rates by time of day | **H₀:** Mean acceptance is the same across all times of day.<br>**Hₐ:** At least one time-of-day group has a different mean acceptance. |
 | **3** | Do travel time/direction costs matter? | Four binary predictors: `≥15 min`, `≥25 min`, `same direction`, `opposite direction` (1 = yes, 0 = no) | Multiple binary predictors | **Multiple bootstrap comparisons** or **two-way ANOVA** to test travel-cost effects | **H₀:** Travel time and direction have no effect on mean acceptance.<br>**Hₐ:** Travel time or direction significantly affect acceptance rates. |

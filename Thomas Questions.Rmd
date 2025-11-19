@@ -8,8 +8,181 @@ output:
     highlight: rstudio
 ---
 
-# Import Dataset
-```{r}
-dataset <- read.csv('in-vehicle-coupon-rec.csv')
+```{r setup, echo=FALSE}
+library(dplyr)
+library(tidyr)
+library(tibble)
+library(ggplot2)
+library(testequavar)
 ```
 
+# Import Dataset
+
+```{r echo=FALSE}
+dataset <- read.csv("in-vehicle-coupon-rec.csv")
+dataset <- dataset %>% rename(passenger = passanger)
+dataset %>%
+  group_by(passenger) %>%
+  count()
+```
+
+## Question 6
+
+Does who’s in the car relate to acceptance?
+
+```{r echo=FALSE}
+q6.props <- dataset %>%
+  group_by(passenger) %>%
+  summarize(proportion = mean(Y), .groups = "drop") %>%
+  arrange(proportion) %>%
+  mutate(passenger = factor(passenger, levels = passenger))
+
+ggplot(
+  q6.props,
+  aes(x = passenger, y = proportion)
+) +
+  geom_col() +
+  labs(
+    x = "Passenger group",
+    y = "Proportion",
+    title = "Coupon acceptance proportion by passenger group"
+  ) +
+  theme_minimal()
+```
+
+Based on the group-level proportions, we can see the groups that are more likely to accept coupons, however we need to verify if this order of likelihood is significant, or just by random chance.
+
+Before performing ANOVA, we check the equal-variance assumption using equavar4test from the testequavar package.
+
+We test-
+
+$H_0: \sigma_{Alone}^2 = \sigma_{Friend(s)}^2 =\sigma_{Kid(s)}^2 =\sigma_{Partner}^2$ (equal variances)
+
+$H_A: \text{At least one group has a different variance.}$
+
+```{r echo=FALSE}
+passenger.groups <- unique(dataset$passenger)
+
+equa4vartest(
+  dataset$Y[dataset$passenger == passenger.groups[1]],
+  dataset$Y[dataset$passenger == passenger.groups[2]],
+  dataset$Y[dataset$passenger == passenger.groups[3]],
+  dataset$Y[dataset$passenger == passenger.groups[4]],
+  a = 0.05, B = 500
+)
+```
+
+For binary outcomes, each group’s variance is p(1-p), so when group means differ, their variances are not exactly equal and strict homogeneity of variance is unlikely. We include the equal-variance test for completeness, but rely mainly on the ANOVA F-test and Tukey’s HSD as large-sample approximations: although the group sizes are unequal, each group still has a substantial sample size, so these methods are reasonably robust in practice. A more exact analysis could instead use logistic regression or Welch-type methods (with unequal-variance post-hoc comparisons), but the resulting conclusions are expected to be very similar.
+
+We test-
+
+$H_0:$ Mean acceptance is equal across all passenger groups.
+
+$H_A:$ At least 1 passenger group has a different mean acceptance.
+
+Method: One-way ANOVA on passenger and acceptance columns.
+
+```{r echo=FALSE}
+q6.lm <- lm(Y ~ as.factor(passenger), data = dataset)
+anova(q6.lm)
+```
+
+At least one mean is significantly different, now to determine which group(s).
+
+```{r echo=FALSE}
+q6.fit <- aov(q6.lm)
+q6.tk <- TukeyHSD(q6.fit)
+q6.tk
+```
+
+Since acceptance within each group is modeled as the proportion of 1’s (coupon accepted), the group mean is the estimated probability of acceptance. The Tukey output therefore reports differences in proportions (i.e., differences in average acceptance probabilities), and the lwr and upr columns give 95% confidence intervals for those differences. All pairwise Tukey (studentized range) comparisons are significant at the 0.001 level except Kid(s) − Alone, so given these data we do not have evidence of a difference in acceptance rates between those driving alone and those with kid(s).
+
+Using Tukey's method to control family-wise error at 5%, we are 95% confident, and estimate that, on average, a person is:
+
+-   12.11% to 17.41% **more likely** to accept a coupon if they are with friend(s) than when they are alone.
+-   2.83% to 11.08% **more likely** to accept a coupon if they are with their partner than when they are alone.
+-   12.30% to 21.39% **less likely** to accept a coupon if they are with kid(s) than when they are with friend(s).
+-   3.38% to 12.24% **less likely** to accept a coupon if they are with their partner than when they are with friend(s).
+-   3.50% to 14.57% **more likely** to accept a coupon if they are with their partner than when they are with kid(s)
+
+```{r echo=FALSE, fig.cap="Figure 6"}
+## Rebuild the data from the model so we don't need `coupons`
+dat <- model.frame(q6.lm)
+colnames(dat) <- c("accept", "passenger")
+
+## Group-level acceptance rates
+group_props <- dat %>%
+  group_by(passenger) %>%
+  summarise(prop_acc = mean(accept == 1), .groups = "drop")
+
+## Tukey results
+tk <- TukeyHSD(aov(q6.lm), "as.factor(passenger)")
+
+tk_df <- as.data.frame(tk$`as.factor(passenger)`) %>%
+  rownames_to_column("contrast") %>%
+  separate(contrast, into = c("group2", "group1"), sep = "-") %>%
+  left_join(group_props, by = c("group1" = "passenger")) %>%
+  rename(prop1 = prop_acc) %>%
+  left_join(group_props, by = c("group2" = "passenger")) %>%
+  rename(prop2 = prop_acc) %>%
+  mutate(
+    lower_group  = if_else(prop1 < prop2, group1, group2),
+    higher_group = if_else(prop1 < prop2, group2, group1),
+    label        = paste(group2, "-", group1)
+  )
+
+## Build left (less likely) and right (more likely) CI segments
+seg_left <- tk_df %>%
+  transmute(
+    label,
+    y_start = lwr,
+    y_end = diff,
+    side_group = lower_group
+  )
+
+seg_right <- tk_df %>%
+  transmute(
+    label,
+    y_start = diff,
+    y_end = upr,
+    side_group = higher_group
+  )
+
+segments <- bind_rows(seg_left, seg_right)
+
+passenger_cols <- c(
+  "Alone"     = "#1b9e77",
+  "Friend(s)" = "#d95f02",
+  "Kid(s)"    = "#7570b3",
+  "Partner"   = "#e7298a"
+)
+
+ggplot() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_segment(
+    data = segments,
+    aes(
+      x = label,
+      xend = label,
+      y = y_start,
+      yend = y_end,
+      color = side_group
+    ),
+    linewidth = 1.2
+  ) +
+  geom_point(
+    data = tk_df,
+    aes(x = label, y = diff),
+    color = "black",
+    size = 2.2
+  ) +
+  coord_flip() +
+  scale_color_manual(values = passenger_cols, name = "Group") +
+  labs(
+    x = "Passenger group comparison",
+    y = "Difference in acceptance proportion",
+    title = "Pairwise differences in coupon acceptance (Tukey 95% CIs)"
+  ) +
+  theme_minimal()
+```
+Figure 6 shows Tukey 95% confidence intervals for the difference in coupon‐acceptance proportions for each pair of passenger groups. Each point is the estimated difference in acceptance probability, and the horizontal line is the corresponding 95% confidence interval. The dashed vertical line at 0 represents “no difference”: intervals entirely to the right of 0 indicate that the first group in the label (e.g., Friend(s) – Alone) has a higher acceptance rate; intervals entirely to the left of 0 indicate a lower acceptance rate. Colors indicate which group in the comparison is less or more likely to accept the coupon.

@@ -1,0 +1,39 @@
+---
+title: "Oumayma's Questions"
+output: html_document
+date: "2025-11-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 2. Does time of day relate to acceptance?
+
+Variables (Description): time (categorical: 5 levels — morning, afternoon, evening, late night, unknown); acceptance (binary)	
+
+Data Type: Multi-level categorical on binary outcome	
+
+Planned Method of Analysis: One-way ANOVA on mean acceptance rates by time of day	
+
+Hypotheses (H₀ / Hₐ): 
+  - H₀: Mean acceptance is the same across all times of day.
+  - Hₐ: At least one time-of-day group has a different mean acceptance.
+
+```{r cars}
+summary(cars)
+```
+
+## 4. Is acceptance different by coupon type?	
+
+Variables (Description): coupon (categorical: 4 levels — bar, coffee house, <$20 restaurant, $20–$50 restaurant); acceptance (binary)
+
+Data Type: Categorical predictor with four levels	One-way ANOVA on acceptance means by coupon category	
+
+Hypotheses (H₀ / Hₐ): 
+  - H₀: Mean acceptance is equal across all coupon types.
+  - Hₐ: At least one coupon type has a different mean acceptance.
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```

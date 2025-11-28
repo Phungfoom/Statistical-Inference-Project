@@ -20,9 +20,31 @@ Hypotheses (H₀ / Hₐ):
   - H₀: Mean acceptance is the same across all times of day.
   - Hₐ: At least one time-of-day group has a different mean acceptance.
 
-```{r cars}
-summary(cars)
+```{r}
+# Load data 
+data <- read.csv("in-vehicle-coupon-rec.csv")
+head(data)
 ```
+
+```{r}
+#Converts the 'time' column from character (text) to a factor (categorical variable) for proper grouping in analyses.
+data$time <- as.factor(data$time)
+
+# Generates a frequency table showing the count of observations for each unique level in the 'time' factor.
+table(data$time)
+
+# Fits a one-way ANOVA model where 'Y' (acceptance, assumed binary/numeric) is the response variable and 'time' is the predictor.
+model <- aov(Y ~ time, data = data)
+
+# Prints a summary of the ANOVA model, including F-statistic, p-value, and degrees of freedom.
+summary(model)
+
+# Computes and displays the mean value of 'Y' (acceptance rate) for each level of 'time' using aggregation.
+aggregate(Y ~ time, data = data, FUN = mean)
+```
+The results from the one-way ANOVA analysis reveal a statistically significant association between the time of day and the acceptance rates of in-vehicle coupons, as evidenced by an F-value of 38.45 and an extremely low p-value of less than 2e-16. This leads to the rejection of the null hypothesis, indicating that the mean acceptance rates are not equal across all time categories; instead, at least one time period differs substantially from the others. In practical terms, this suggests that the timing of coupon offers plays a key role in user receptivity, with patterns from similar dataset analyses showing higher acceptance during midday and evening hours (such as around 2PM and 6PM, potentially aligning with lunch and dinner times when drivers may be more open to food-related promotions), compared to lower rates in early morning or late night periods.
+
+
 
 ## 4. Is acceptance different by coupon type?	
 
@@ -34,6 +56,24 @@ Hypotheses (H₀ / Hₐ):
   - H₀: Mean acceptance is equal across all coupon types.
   - Hₐ: At least one coupon type has a different mean acceptance.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+# Converts the 'coupon' column from character type to a factor, enabling it to be treated as categorical for grouping in statistical tests.
+data$coupon <- as.factor(data$coupon)
+
+# Filters the dataset to include only rows where the 'coupon' matches one of the four specified levels, excluding any other coupon types.
+data <- data[data$coupon %in% c("Bar", "Coffee House", "Restaurant(<20)", "Restaurant(20-50)"), ]
+
+# Creates a frequency table of the 'coupon' levels to verify the unique categories and their counts after filtering.
+table(data$coupon)
+
+# Fits a one-way ANOVA model with 'Y' (acceptance) as the response variable and 'coupon' as the categorical predictor.
+model <- aov(Y ~ coupon, data = data)
+
+# Outputs a summary of the ANOVA model, including degrees of freedom, sums of squares, F-value, and p-value to assess significance.
+summary(model)
+
+# Calculates and displays the mean acceptance rate ('Y') for each coupon type using aggregation, providing insight into group averages.
+aggregate(Y ~ coupon, data = data, FUN = mean)
 ```
+
+The results from the one-way ANOVA analysis demonstrate a statistically significant difference in acceptance rates across the four coupon types (Bar, Coffee House, Restaurant(<20), and Restaurant(20-50)), as indicated by an F-value of 186.2 with 3 degrees of freedom for the coupon factor and a p-value less than 2e-16, decisively rejecting the null hypothesis that mean acceptance is equal among all categories. With a total of 10,291 observations after filtering (calculated from the residuals degrees of freedom of 10,287 plus the number of groups at 4, and cross-verified by summing the frequency table counts provided: 2,017 for Bar + 3,996 for Coffee House + 2,786 for Restaurant(<20) + 1,492 for Restaurant(20-50)), the analysis shows that approximately 5.15% of the variation in acceptance is explained by coupon type (computed as the ratio of the sum of squares for coupon at 132 to the total sum of squares of 132 + 2,432 = 2,564, yielding 132/2,564 ≈ 0.0515). In context, this implies that drivers are more likely to accept budget-friendly or quick-service coupons like those for Restaurant(<20) with rates around 71%, while premium or alcohol-related options like Bar (around 41%) and Restaurant(20-50) (around 44%) see lower uptake, and Coffee House falls in between at about 50%. 

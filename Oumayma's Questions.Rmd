@@ -51,7 +51,8 @@ data.frame(time = names(rates),
            n = as.vector(n_obs),
            row.names = NULL)
 ```
-The one-way ANOVA revealed a highly significant association between time of day and coupon acceptance (F(4, 12679) = 44.37, p < 0.001). Tukey’s post-hoc comparisons showed that acceptance was highest at 2 PM (66.2%), which was significantly higher than at 7 AM, 6 PM, and 10 PM, and marginally higher than at 10 AM (p = 0.002). Acceptance at 10 AM and 6 PM was also significantly higher than at 7 AM and 10 PM, whereas 7 AM and 10 PM did not differ from each other. Overall, drivers were markedly more likely to accept coupons during midday and early-evening hours than in the early morning or late night.
+
+The one-way ANOVA revealed a highly significant association between time of day and coupon acceptance (F(4, 12679) = 44.37, p < 2e-16). Tukey’s post-hoc comparisons showed that acceptance was highest at 2 PM (66.2%), which was significantly higher than at 7 AM, 6 PM, and 10 PM, and marginally higher than at 10 AM (p = 0.002). Acceptance at 10 AM and 6 PM was also significantly higher than at 7 AM and 10 PM, whereas 7 AM and 10 PM did not differ from each other. Overall, drivers were markedly more likely to accept coupons during midday and early-evening hours than in the early morning or late night.
 
 
 

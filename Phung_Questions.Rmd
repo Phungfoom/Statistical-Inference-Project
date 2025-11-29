@@ -1,0 +1,239 @@
+---
+title: "Phung Questions"
+author: "Phung Tran"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = TRUE)
+```
+
+```{r include=FALSE}
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r include=FALSE}
+coupon_data <- read.csv("in-vehicle-coupon-recommendation.csv")
+head(coupon_data)
+
+colnames(coupon_data)
+```
+
+### **Q3: Do travel time/direction costs matter?**
+
+**$H_o$:** Travel time and direction have no effect on mean acceptance.
+
+**$H_a$:** Travel time or direction significantly affect acceptance rates.
+
+
+```{r}
+# multiple bootstrap 
+set.seed(123)
+N <- 10^4
+
+# Direction 
+
+Y_same <- subset(coupon_data, select = Y, direction_same == 1, drop = TRUE) # same direction
+Y_opp <- subset(coupon_data, select = Y, direction_same == 0, drop = TRUE) # opposite direction
+
+# opposite direction
+n_opp <- length(Y_opp)
+
+# same direction
+n_same <- length(Y_same)
+
+boot_diffs_dir <- numeric(N)
+
+# Time
+
+Y_short <- subset(coupon_data, select = Y, toCoupon_GEQ25min == 0, drop = TRUE)
+Y_long <- subset(coupon_data, select = Y, toCoupon_GEQ25min == 1, drop = TRUE)
+
+# <25 min as short drive 
+n_short <- length(Y_short)
+
+# >25 min as long drive 
+n_long <- length(Y_long)
+
+boot_diffs_time <- numeric(N)
+
+```
+
+```{r}
+# bootstrap for direction
+for(i in 1:N)
+{
+  same_sample <- sample(Y_same, n_same, replace = TRUE)
+  opp_sample <- sample(Y_opp, n_opp, replace = TRUE)
+  
+  boot_diffs_dir[i] <- mean(same_sample) - mean(opp_sample)
+}  
+
+quantile(boot_diffs_dir, c(0.025, 0.975))
+```
+
+```{r}
+# bootstrap for time
+for(i in 1:N)
+{
+ short_sample <- sample(Y_short, n_short, replace = TRUE)
+ long_sample <- sample(Y_long, n_long, replace = TRUE)
+ 
+ boot_diffs_time[i] <- mean(short_sample) - mean(long_sample)
+}
+
+quantile(boot_diffs_time, c(0.025, 0.975))
+```
+
+```{r}
+par(mfrow = c(1,2))
+hist(boot_diffs_dir, main = 'Boot Mean Diff. Dist. : Direction', xlab = 'Mean Difference')
+
+hist(boot_diffs_time, main = 'Boot Mean Diff. Dist. : Time', xlab = 'Mean Difference')
+```
+
+#### **Bootstrap Interpretation:**
+
+**Time:** The 95% confidence interval, [0.131, 0.185], for time does not include 0, indicating that time is statistically significant.This can be seein in the histogram, distribution is centered at around 0.16, with 0 not included. The interval is positive, showing that the acceptance rate for short drives is higher than long drives.
+
+**Direction:** The 95% confidence interval, [-0.003, 0.038], for direction includes 0, indicating that direction is not statistically significant.The distribution is centered at 0. making zero a plausible value.There is not enough information to say that direction alone causes people to accept or reject a coupon.
+
+### **ANOVA Test**
+
+A Two-Way ANOVA test is typically for continuous numbers, in this data set, there is a binary response instead. ANOVA, in this case would let us know the acceptance rate changes based on two different factors, effect of time and direction, at the same time.
+
+**Questions:**
+
+**Time:** Does driving >25 min change the decision to accept the coupon?
+
+**Direction:** Does driving in the opposite direction change the decision to accept the coupon?
+
+**Both:** Does the direction matter more when the drive is long? 
+
+```{r}
+# two way ANNOVA
+
+#factor to organize
+
+coupon_data$time <- factor(coupon_data$toCoupon_GEQ25min, levels = c(0,1), labels = c('Short Time (<25)', 'Long Time (>25)'))
+
+coupon_data$dir <- factor(coupon_data$direction_same, levels = c(1,0), labels = c('Same Direction', 'Opposite Direction'))
+
+annova_model <- aov(Y ~ time * dir, data = coupon_data)
+
+summary(annova_model) 
+```
+#### **Interpretation:**
+
+**Effect of Time:** At significance level 0.005, there is a statistical significance for time. The p value is less than 0.05 alpha, so we fail to accept the null hypothesis. Driving >25 min does change the drivers decision to accept the coupon.
+
+**Effect of Direction:** There is not a statistical significance for direction. The p value is greater than 0.005 alpha, so we fail to reject the null hypothesis. The data cannot confirm or deny that directions alone causes people to accept or reject the coupon, reconfirming the conclusion drawn from bootstrapping.
+
+```{r}
+# plot for ANOVA 
+
+# sum of total
+group_mean <- aggregate(Y ~ time + dir, data = coupon_data, FUN = mean)
+
+ggplot(group_mean, aes(x = time, y = Y, group = dir, color = dir)) + geom_line(size = 1.2, position = position_dodge(width = 0.2)) + geom_point(size = 4, position = position_dodge(width = 0.2)) +
+  labs(title = "Two-Way ANOVA",
+       y = "Acceptance Rate (Mean Y)",
+       x = "Driving Time") +
+  theme_minimal()
+```
+
+#### **Interpretation:**
+
+There is no blue dot for on the left side representing Long Time (> 25) min. That means there are no drivers who were even offered a coupon that has a long drive **and** in the same direction.
+
+**Does time cost matter?**
+
+Yes, time cost does matter, as the red line slopes downward. When the drive time is >25 min, the acceptance rate for the coupon drops. 
+
+**Does Direction cost matter?**
+
+Direction does not matter for drive times <25 min. People accept the coupon at the same rate whether it's in the opposite direction or not.
+
+**Does the direction matter more when the drive is long?**
+
+There is no data on long drives in the same direction so this question cannot be answered.
+
+```{r}
+# contingency table
+
+# average 0 to 1 for each group
+mean_table <- tapply(coupon_data$Y,list(coupon_data$time, coupon_data$dir), mean)
+
+# how many drivers in each group
+count_table <- table(coupon_data$time, coupon_data$dir)
+
+mean_table
+count_table
+```
+#### **Interpretation:**
+
+The mean average contingency table shows that for short drives, direction didn't matter at the average was almost identical at 0.58. The table also reaffirms that no drivers were offered a coupon that required a long drive in the same direction.
+
+### **Q7: Are there weather effects?**
+
+**$H_o$:** Weather and temperature have no effect on acceptance (no main or interaction effects).
+
+**$H_a$:** Weather or temperature significantly affect acceptance.
+
+```{r}
+# two way ANNOVA
+
+coupon_data$temp_cat <- factor(coupon_data$temperature, levels = c(30,55,80), labels = c('Low (30F)', 'Med (55F)', 'High (80F)'))
+
+coupon_data$weather_cat <- factor(coupon_data$weather, levels = c('Snowy', 'Rainy', 'Sunny'))
+
+weather_anova <- aov(Y ~ weather_cat * temp_cat, data = coupon_data)
+summary(weather_anova)
+```
+#### **Interpretation:**
+
+**Weather:** At significant level 0.005, weather has a p value considerably less then 0.05. The null hypothesis is rejected in this case, indicating that weather does have an affect on coupon acceptance. 
+
+**Temp:** At significance level 0.005, there is a statistical significance for time. The null hypothesis is rejected in this case, indicating that temp does have an affect on coupon acceptance. 
+
+```{r}
+# contingency table
+
+mean_weather <- tapply(coupon_data$Y, list(coupon_data$weather_cat, coupon_data$temp_cat), mean)
+
+count_weather <- table(coupon_data$weather_cat)
+
+mean_weather
+count_weather
+```
+#### **Interpretation:**
+
+**Effect of Snow:** Comparison of Sunny and Snowy at 30F shows that, when it snows, people are less likely to accept a coupon
+
+**Effect of Rain:** Comparison of Sunny and Rainy at 55F shows that, people are less likely to accept a coupon.
+
+**Effect of Temp:** When it is Sunny, People are more likely to accept a coupon when it's 30F (62%), then 80F (60%), with 55F (57%), having the lowest acceptance rate of the three. 
+
+The contingency table also shows that adverse weather conditions  significantly reduce acceptance rates. On sunny days, acceptance rates are similar across all 3 temp. Bad weather is a stonger deterant than temperature itself. 
+
+```{r}
+group_means_w <- aggregate(Y ~ weather_cat + temp_cat, data = coupon_data, FUN = mean)
+
+ggplot(group_means_w, aes(x = temp_cat, y = Y, group = weather_cat, color = weather_cat)) + 
+  geom_line(size = 1.2, position = position_dodge(width = 0.1)) + 
+  geom_point(size = 4, position = position_dodge(width = 0.1)) + 
+  labs(title = "Interaction Plot: Weather vs. Temperature",
+       y = "Acceptance Rate",
+       x = "Temperature",
+       color = "Weather") +
+  theme_minimal()
+```
+
+#### **Interpretation:** 
+
+The above plot gives a view on the results of the contingency table. The red dot indicating snow has no line because it only snows at 30F. The green dot indicating rain is also isolated because the data only captures rain at 55F. The blue line indicating sun, is the only like because sunny weather can happen at all 3 temperatures.
+
+There are large gaps between each dot varivable for temp. Snow makes people reject coupons. Rain is the most significant weather with higher coupon rejection rates. When it's sunny, changes in temp alone has minimal effects on wheater a driver will accept or reject a coupon. 

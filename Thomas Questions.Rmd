@@ -8,22 +8,21 @@ output:
     highlight: rstudio
 ---
 
-```{r setup, echo=FALSE}
+```{r setup, echo=FALSE, include=FALSE}
 library(dplyr)
 library(tidyr)
 library(tibble)
 library(ggplot2)
 library(testequavar)
+library(kableExtra)
 ```
 
 # Import Dataset
 
 ```{r echo=FALSE}
+# Import coupon dataset and fix passenger name.
 dataset <- read.csv("in-vehicle-coupon-rec.csv")
 dataset <- dataset %>% rename(passenger = passanger)
-dataset %>%
-  group_by(passenger) %>%
-  count()
 ```
 
 ## Question 6
@@ -31,12 +30,17 @@ dataset %>%
 Does who’s in the car relate to acceptance?
 
 ```{r echo=FALSE}
+# Tabulate counts of accepted (Y = 1) vs not (Y = 0) within each passenger group.
+table(dataset$passenger, dataset$Y)
+
+# Compute acceptance proportion for each passenger group and order from lowest to highest.
 q6.props <- dataset %>%
   group_by(passenger) %>%
   summarize(proportion = mean(Y), .groups = "drop") %>%
   arrange(proportion) %>%
   mutate(passenger = factor(passenger, levels = passenger))
 
+# Plot acceptance proportion by passenger group (ordered by proportion).
 ggplot(
   q6.props,
   aes(x = passenger, y = proportion)
@@ -50,7 +54,7 @@ ggplot(
   theme_minimal()
 ```
 
-Based on the group-level proportions, we can see the groups that are more likely to accept coupons, however we need to verify if this order of likelihood is significant, or just by random chance.
+Based on the group-level proportions, we can see the groups that are more likely to accept coupons, however, we need to check whether these differences are statistically significant or could be explained by random variation.
 
 Before performing ANOVA, we check the equal-variance assumption using equavar4test from the testequavar package.
 
@@ -61,8 +65,11 @@ $H_0: \sigma_{Alone}^2 = \sigma_{Friend(s)}^2 =\sigma_{Kid(s)}^2 =\sigma_{Partne
 $H_A: \text{At least one group has a different variance.}$
 
 ```{r echo=FALSE}
+# Extract the unique passenger group labels (e.g., Alone, Friend(s), Kid(s), Partner).
 passenger.groups <- unique(dataset$passenger)
 
+# Permutation test for equality of variances across the four passenger groups.
+# a = 0.05 sets the significance level; B = 500 is the number of permutations.
 equa4vartest(
   dataset$Y[dataset$passenger == passenger.groups[1]],
   dataset$Y[dataset$passenger == passenger.groups[2]],
@@ -72,7 +79,7 @@ equa4vartest(
 )
 ```
 
-For binary outcomes, each group’s variance is p(1-p), so when group means differ, their variances are not exactly equal and strict homogeneity of variance is unlikely. We include the equal-variance test for completeness, but rely mainly on the ANOVA F-test and Tukey’s HSD as large-sample approximations: although the group sizes are unequal, each group still has a substantial sample size, so these methods are reasonably robust in practice. A more exact analysis could instead use logistic regression or Welch-type methods (with unequal-variance post-hoc comparisons), but the resulting conclusions are expected to be very similar.
+The permutation-based equal-variance test gave $p = 0.002$, providing strong evidence against equal variances. For binary outcomes, each group’s variance is $p(1-p)$, so when group means differ, their variances are not exactly equal and strict homogeneity of variance is unlikely. We include the equal-variance test for completeness, but we use ANOVA F-test and Tukey’s HSD as large-sample approximations: although the group sizes are unequal, each group still has a substantial sample size, so these methods are reasonably robust in practice. A more exact analysis could instead use logistic regression or Welch-type methods (with unequal-variance post-hoc comparisons), but the resulting conclusions are expected to be very similar.
 
 We test-
 
@@ -83,19 +90,27 @@ $H_A:$ At least 1 passenger group has a different mean acceptance.
 Method: One-way ANOVA on passenger and acceptance columns.
 
 ```{r echo=FALSE}
+# Fit a one-way ANOVA model for acceptance (Y) by passenger group.
 q6.lm <- lm(Y ~ as.factor(passenger), data = dataset)
+
+# ANOVA table to test if mean acceptance differs across passenger groups.
 anova(q6.lm)
 ```
 
-At least one mean is significantly different, now to determine which group(s).
+The ANOVA F-test is highly significant (p < 0.001), indicating that at least one passenger group has a different mean acceptance rate. We therefore follow up with Tukey’s HSD to identify which groups differ.
 
 ```{r echo=FALSE}
+# Convert the linear model to an ANOVA object (required by TukeyHSD).
 q6.fit <- aov(q6.lm)
+
+# Tukey's HSD post-hoc comparisons for all passenger-group pairs.
 q6.tk <- TukeyHSD(q6.fit)
+
+# Display pairwise differences, confidence intervals, and adjusted p-values.
 q6.tk
 ```
 
-Since acceptance within each group is modeled as the proportion of 1’s (coupon accepted), the group mean is the estimated probability of acceptance. The Tukey output therefore reports differences in proportions (i.e., differences in average acceptance probabilities), and the lwr and upr columns give 95% confidence intervals for those differences. All pairwise Tukey (studentized range) comparisons are significant at the 0.001 level except Kid(s) − Alone, so given these data we do not have evidence of a difference in acceptance rates between those driving alone and those with kid(s).
+Since acceptance within each group is modeled as the proportion of 1’s (coupon accepted), the group mean is the estimated probability of acceptance. The Tukey output therefore reports differences in proportions (i.e., differences in average acceptance probabilities), and the lwr and upr columns give 95% confidence intervals for those differences. Positive differences mean the first group in the contrast label has a higher acceptance probability. All pairwise Tukey (studentized range) comparisons are significant at the 0.001 level except Kid(s) − Alone, so given these data we do not have evidence of a difference in acceptance rates between those driving alone and those with kid(s).
 
 Using Tukey's method to control family-wise error at 5%, we are 95% confident, and estimate that, on average, a person is:
 
@@ -105,17 +120,17 @@ Using Tukey's method to control family-wise error at 5%, we are 95% confident, a
 -   3.38% to 12.24% **less likely** to accept a coupon if they are with their partner than when they are with friend(s).
 -   3.50% to 14.57% **more likely** to accept a coupon if they are with their partner than when they are with kid(s)
 
-```{r echo=FALSE, fig.cap="Figure 6"}
-## Rebuild the data from the model so we don't need `coupons`
+```{r echo=FALSE}
+# Rebuild data from the model so we do not depend on the original dataset object.
 dat <- model.frame(q6.lm)
 colnames(dat) <- c("accept", "passenger")
 
-## Group-level acceptance rates
+# Compute group-level acceptance rates.
 group_props <- dat %>%
   group_by(passenger) %>%
   summarise(prop_acc = mean(accept == 1), .groups = "drop")
 
-## Tukey results
+# Extract Tukey results for passenger comparisons.
 tk <- TukeyHSD(aov(q6.lm), "as.factor(passenger)")
 
 tk_df <- as.data.frame(tk$`as.factor(passenger)`) %>%
@@ -131,25 +146,26 @@ tk_df <- as.data.frame(tk$`as.factor(passenger)`) %>%
     label        = paste(group2, "-", group1)
   )
 
-## Build left (less likely) and right (more likely) CI segments
+# Build CI segments for the less-likely (left) and more-likely (right) groups.
 seg_left <- tk_df %>%
   transmute(
     label,
-    y_start = lwr,
-    y_end = diff,
+    y_start   = lwr,
+    y_end     = diff,
     side_group = lower_group
   )
 
 seg_right <- tk_df %>%
   transmute(
     label,
-    y_start = diff,
-    y_end = upr,
+    y_start   = diff,
+    y_end     = upr,
     side_group = higher_group
   )
 
 segments <- bind_rows(seg_left, seg_right)
 
+# Color palette for passenger groups.
 passenger_cols <- c(
   "Alone"     = "#1b9e77",
   "Friend(s)" = "#d95f02",
@@ -162,9 +178,9 @@ ggplot() +
   geom_segment(
     data = segments,
     aes(
-      x = label,
+      x    = label,
       xend = label,
-      y = y_start,
+      y    = y_start,
       yend = y_end,
       color = side_group
     ),
@@ -185,4 +201,187 @@ ggplot() +
   ) +
   theme_minimal()
 ```
-Figure 6 shows Tukey 95% confidence intervals for the difference in coupon‐acceptance proportions for each pair of passenger groups. Each point is the estimated difference in acceptance probability, and the horizontal line is the corresponding 95% confidence interval. The dashed vertical line at 0 represents “no difference”: intervals entirely to the right of 0 indicate that the first group in the label (e.g., Friend(s) – Alone) has a higher acceptance rate; intervals entirely to the left of 0 indicate a lower acceptance rate. Colors indicate which group in the comparison is less or more likely to accept the coupon.
+
+The image above shows Tukey 95% confidence intervals for the difference in coupon‐acceptance proportions for each pair of passenger groups. Each point is the estimated difference in acceptance probability, and the horizontal line is the corresponding 95% confidence interval. The dashed vertical line at 0 represents “no difference”: intervals entirely to the right of 0 indicate that the first group in the label (e.g., Friend(s) – Alone) has a higher acceptance rate; intervals entirely to the left of 0 indicate a lower acceptance rate. For each comparison, the CI segment is colored by the group at that side: the left segment is colored by the less-likely group, and the right segment by the more-likely group.
+
+## Question 8
+
+Do age groups or income bands relate to coupon acceptance?
+
+```{r}
+# Define the desired ordering for age and income factor levels.
+age_levels <- c("below21", "21", "26", "31", "36", "41", "46", "50plus")
+income_levels <- c(
+  "Less than $12500",
+  "$12500 - $24999",
+  "$25000 - $37499",
+  "$37500 - $49999",
+  "$50000 - $62499",
+  "$62500 - $74999",
+  "$75000 - $87499",
+  "$87500 - $99999",
+  "$100000 or More"
+)
+
+# Convert age and income columns to ordered factors with the specified levels.
+dataset <- dataset %>%
+  mutate(
+    age    = factor(age,    levels = age_levels),
+    income = factor(income, levels = income_levels)
+  )
+
+# --- Counts table: rows = income, columns = age ---
+
+age_income_counts <- dataset %>%
+  # Count the number of observations in each Income × Age combination.
+  count(income, age, name = "n") %>%
+  # Reshape to wide format so each age becomes a column.
+  pivot_wider(
+    names_from  = age,
+    values_from = n,
+    values_fill = 0         # Fill empty combinations with 0.
+  )
+
+# Display the table of sample sizes by income and age.
+kable(
+  age_income_counts,
+  caption = "Counts by Income (rows) and Age (columns)"
+)
+```
+
+The table above shows the joint sample sizes across Age (columns) and Income (rows). Most Age × Income cells have several hundred observations, with only one empty cell (\$75k–\$87,499 & below21). So the design is somewhat unbalanced but not sparse, and a two-way logistic regression (Age, Income, and their interaction) is reasonable for this binary outcome.
+
+Given these sample sizes, the next appropriate part of the analysis is to examine acceptance rates within each Age × Income group.
+
+```{r}
+# --- Proportion table: acceptance rate per Age × Income cell ---
+
+age_income_props <- dataset %>%
+  # Compute mean acceptance (proportion of Y = 1) for each Income × Age cell.
+  group_by(income, age) %>%
+  summarise(prop_Y = mean(Y), .groups = "drop") %>%
+  # Reshape to wide format so each age group becomes a column.
+  pivot_wider(
+    names_from  = age,
+    values_from = prop_Y,
+    values_fill = NA      # Use NA where a cell has no observations.
+  )
+
+# Display the table of acceptance proportions by income and age.
+kable(
+  age_income_props,
+  digits  = 3,
+  caption = "Proportion accepted (Y) by Income (rows) and Age (columns)"
+)
+
+# --- Heatmap of observed acceptance proportions ---
+
+age_income_long <- dataset %>%
+  group_by(income, age) %>%
+  summarise(prop_Y = mean(Y), .groups = "drop")
+
+ggplot(age_income_long,
+       aes(x = age, y = income, fill = prop_Y)) +
+  geom_tile() +
+  scale_fill_gradientn(
+    name   = "Proportion\naccepted",
+    limits = c(0, 1),
+    colours = c(
+      "#313695", "#4575b4", "#74add1", "#abd9e9",
+      "#ffffbf", "#fdae61", "#f46d43", "#d73027", "#a50026"
+    )
+  ) +
+  labs(
+    x = "Age group",
+    y = "Income band",
+    title = "Coupon acceptance proportion by Age and Income"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+The proportion table and heatmap summarize the observed acceptance rate in each Age × Income cell. Acceptance varies from roughly 0.3 to 0.8, with generally higher rates for younger drivers (below21, 21, 26) and some mid- to lower-income groups, but the pattern is not monotonic in either age or income. These descriptive patterns suggest that both variables may relate to acceptance, but formal testing is needed because the groups differ in size and some cells are relatively small.
+
+Logistic regression is appropriate here because the response is binary (0/1), and the model does not require equal variances or normality assumptions.
+
+```{r}
+# --- Logistic regression with Age × Income interaction ---
+
+# Fit a logistic regression model for coupon acceptance (Y) with
+# main effects of age and income plus their interaction.
+model_full <- glm(
+  Y ~ age * income,
+  data   = dataset,
+  family = binomial
+)
+
+# Likelihood-ratio (Chi-square) tests for age, income, and their interaction.
+anova(model_full, test = "Chisq")
+```
+
+We fit a logistic regression model predicting coupon acceptance from Age, Income, and their interaction.
+
+$\text{logit}(p) = \beta_0 + \beta_{\text{Age}_i} + \beta_{\text{Income}_j} + \beta_{(\text{Age}_i \space : \space \text{Income}_j)}$
+
+Because the model includes a full interaction, each coefficient represents how acceptance differs from the reference group (below21 and “Less than $12,500”) and how age and income effects change depending on one another.
+
+The Analysis of Deviance shows that Age (χ² = 63.1, p < 0.0001), Income (χ² = 47.9, p < 0.0001), and especially the Age × Income interaction (χ² = 187.0, p < 0.0001) all significantly improve model fit. This indicates that neither age nor income acts independently—the effect of income depends on age, and the effect of age depends on income.
+
+One interaction coefficient was not estimable due to an empty Age × Income cell, which is consistent with the count table and does not affect the rest of the model.
+
+Overall, the interaction model fits significantly better than the null model, although acceptance is clearly influenced by additional variables not included here. The next step is to visualize model-based predicted probabilities for each Age × Income combination.
+
+```{r}
+# ---- Model-based predictions using predict() ----
+
+# Build grid of all Age x Income combinations.
+new_grid <- expand.grid(
+  age    = levels(dataset$age),
+  income = levels(dataset$income)
+)
+
+# Predict on the logit scale with standard errors.
+pred_link <- predict(
+  model_full,
+  newdata = new_grid,
+  type   = "link",
+  se.fit = TRUE
+)
+
+# Transform to predicted probabilities and 95% CIs.
+new_grid <- new_grid %>%
+  mutate(
+    fit_link = pred_link$fit,
+    se_link  = pred_link$se.fit,
+    prob     = plogis(fit_link),                         # predicted probability
+    lower    = plogis(fit_link - 1.96 * se_link),        # 95% CI lower
+    upper    = plogis(fit_link + 1.96 * se_link)         # 95% CI upper
+  )
+
+# ---- Heatmap of predicted acceptance probabilities ----
+
+ggplot(new_grid,
+       aes(x = age, y = income, fill = prob)) +
+  geom_tile() +
+  scale_fill_gradientn(
+    name   = "Predicted\nprobability",
+    limits = c(0, 1),
+    colours = c(
+      "#313695", "#4575b4", "#74add1", "#abd9e9",
+      "#ffffbf", "#fdae61", "#f46d43", "#d73027", "#a50026"
+    )
+  ) +
+  labs(
+    x = "Age group",
+    y = "Income band",
+    title = "Model-based coupon acceptance probability by Age and Income"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+Using the fitted logistic model, we used predict() to compute model-based acceptance probabilities for every Age × Income combination. The predicted-probability heatmap smooths out sampling noise and shows the same qualitative pattern as the raw proportions: higher acceptance for many younger age groups, lower acceptance for some older/high-income combinations, and no simple increasing or decreasing trend in either variable alone. This visualization reinforces the conclusion that age and income jointly relate to coupon acceptance through a non-additive interaction.

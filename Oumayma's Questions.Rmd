@@ -21,28 +21,37 @@ Hypotheses (H₀ / Hₐ):
   - Hₐ: At least one time-of-day group has a different mean acceptance.
 
 ```{r}
+library(dplyr)
 # Load data 
 data <- read.csv("in-vehicle-coupon-rec.csv")
 head(data)
 ```
 
 ```{r}
-#Converts the 'time' column from character (text) to a factor (categorical variable) for proper grouping in analyses.
-data$time <- as.factor(data$time)
+# Fix time order: 7AM → 10AM → 2PM → 6PM → 10PM
+data$time <- factor(data$time, levels = c("7AM", "10AM", "2PM", "6PM", "10PM"), ordered = TRUE)
 
-# Generates a frequency table showing the count of observations for each unique level in the 'time' factor.
-table(data$time)
+# Run one-way ANOVA to test if mean acceptance differs by time of day
+summary(aov(Y ~ time, data = d))
 
-# Fits a one-way ANOVA model where 'Y' (acceptance, assumed binary/numeric) is the response variable and 'time' is the predictor.
-model <- aov(Y ~ time, data = data)
+# Tukey HSD post-hoc test - shows exactly WHICH times differ from each other
+TukeyHSD(aov(Y ~ time, data = d))
+# Plot the Tukey results – visual confidence intervals of all pairwise differences
+plot(TukeyHSD(aov(Y ~ time, data = d))) # Any interval that does NOT cross zero = statistically significant difference
 
-# Prints a summary of the ANOVA model, including F-statistic, p-value, and degrees of freedom.
-summary(model)
+# Calculate acceptance rate (%) and sample size for each time 
+temp   <- table(d$time, d$Y)           # crosstab: rows = time, columns = 0/1
+rates  <- prop.table(temp, margin = 1) # row percentages
+rates  <- rates[, "1"]                 # keep only the "accepted" column
+n_obs  <- margin.table(temp, margin = 1)
 
-# Computes and displays the mean value of 'Y' (acceptance rate) for each level of 'time' using aggregation.
-aggregate(Y ~ time, data = data, FUN = mean)
+# Combine results into a nice data frame and display
+data.frame(time = names(rates),
+           acceptance_rate = round(rates, 3),
+           n = as.vector(n_obs),
+           row.names = NULL)
 ```
-The results from the one-way ANOVA analysis reveal a statistically significant association between the time of day and the acceptance rates of in-vehicle coupons, as evidenced by an F-value of 44.37 and an extremely low p-value of less than 2e-16. This leads to the rejection of the null hypothesis, indicating that the mean acceptance rates are not equal across all time categories (7AM, 10AM, 2PM, 6PM, and 10PM); instead, at least one time period differs substantially from the others. In practical terms, this suggests that the timing of coupon offers plays a key role in user receptivity, with patterns from dataset analyses showing higher acceptance during midday and evening hours (such as around 2PM at approximately 66% and 6PM at around 58%, potentially aligning with lunch and dinner times when drivers may be more open to food-related promotions), compared to lower rates in early morning (e.g., 7AM at about 50%) or late night periods (e.g., 10PM at around 50%), and moderate at 10AM (about 60%). 
+The one-way ANOVA revealed a highly significant association between time of day and coupon acceptance (F(4, 12679) = 44.37, p < 0.001). Tukey’s post-hoc comparisons showed that acceptance was highest at 2 PM (66.2%), which was significantly higher than at 7 AM, 6 PM, and 10 PM, and marginally higher than at 10 AM (p = 0.002). Acceptance at 10 AM and 6 PM was also significantly higher than at 7 AM and 10 PM, whereas 7 AM and 10 PM did not differ from each other. Overall, drivers were markedly more likely to accept coupons during midday and early-evening hours than in the early morning or late night.
 
 
 
@@ -57,23 +66,33 @@ Hypotheses (H₀ / Hₐ):
   - Hₐ: At least one coupon type has a different mean acceptance.
 
 ```{r}
-# Converts the 'coupon' column from character type to a factor, enabling it to be treated as categorical for grouping in statistical tests.
-data$coupon <- as.factor(data$coupon)
+# Make sure 'coupon' is treated as a categorical variable
+data$coupon <- factor(data$coupon)
 
-# Filters the dataset to include only rows where the 'coupon' matches one of the four specified levels, excluding any other coupon types.
-data <- data[data$coupon %in% c("Bar", "Coffee House", "Restaurant(<20)", "Restaurant(20-50)"), ]
+# One-way ANOVA to test if acceptance differs by coupon type
+summary(aov(Y ~ coupon, data = d))
 
-# Creates a frequency table of the 'coupon' levels to verify the unique categories and their counts after filtering.
-table(data$coupon)
+# Tukey HSD post-hoc test – shows exactly WHICH coupon types differ
+TukeyHSD(aov(Y ~ coupon, data = d))
 
-# Fits a one-way ANOVA model with 'Y' (acceptance) as the response variable and 'coupon' as the categorical predictor.
-model <- aov(Y ~ coupon, data = data)
+# Plot Tukey results – visual of all pairwise differences
+plot(TukeyHSD(aov(Y ~ coupon, data = d))) # Intervals not crossing zero = significant difference at p < 0.05
 
-# Outputs a summary of the ANOVA model, including degrees of freedom, sums of squares, F-value, and p-value to assess significance.
-summary(model)
+# Calculate acceptance rate and sample size for each coupon type
+temp_table   <- table(d$coupon, d$Y)                    # Crosstab: coupon vs accept/reject
+accept_rate  <- prop.table(temp_table, margin = 1)[, "1"]   # Acceptance % per coupon
+n_per_coupon <- margin.table(temp_table, margin = 1)        # Number of offers per type
 
-# Calculates and displays the mean acceptance rate ('Y') for each coupon type using aggregation, providing insight into group averages.
-aggregate(Y ~ coupon, data = data, FUN = mean)
+# Create clean results table and sort from highest to lowest acceptance
+result_coupon <- data.frame(
+  Coupon_Type     = names(accept_rate),
+  Acceptance_Rate = round(as.numeric(accept_rate), 3),
+  N               = as.vector(n_per_coupon),
+  row.names       = NULL
+)
+
+# Sort by acceptance rate (highest first)
+result_coupon[order(-result_coupon$Acceptance_Rate), ]
 ```
 
-The results from the one-way ANOVA analysis demonstrate a statistically significant difference in acceptance rates across the four coupon types (Bar, Coffee House, Restaurant(<20), and Restaurant(20-50)), as indicated by an F-value of 186.2 with 3 degrees of freedom for the coupon factor and a p-value less than 2e-16, decisively rejecting the null hypothesis that mean acceptance is equal among all categories. With a total of 10,291 observations after filtering (calculated from the residuals degrees of freedom of 10,287 plus the number of groups at 4, and cross-verified by summing the frequency table counts provided: 2,017 for Bar + 3,996 for Coffee House + 2,786 for Restaurant(<20) + 1,492 for Restaurant(20-50)), the analysis shows that approximately 5.15% of the variation in acceptance is explained by coupon type (computed as the ratio of the sum of squares for coupon at 132 to the total sum of squares of 132 + 2,432 = 2,564, yielding 132/2,564 ≈ 0.0515). In context, this implies that drivers are more likely to accept budget-friendly or quick-service coupons like those for Restaurant(<20) with rates around 70%, while premium or alcohol-related options like Bar (around 41%) and Restaurant(20-50) (around 44%) see lower uptake, and Coffee House falls in between at about 50%. 
+The one-way ANOVA revealed a highly significant association between coupon type and acceptance rate (F(4, 12679) = 234.5, p < 2e-16). Tukey’s HSD post-hoc comparisons (95% family-wise confidence level) showed that acceptance rates for Carry out & Take away (71.6%) and Restaurant(<20) (70.7%) were virtually identical and not significantly different from each other (p = 0.208), but both were significantly higher than all other coupon types (p < 0.001). Coffee House coupons (49.9%) had moderate acceptance, significantly higher than both Restaurant(20-50) (44.1%) and Bar (41.0%) coupons (p < 0.001), whereas acceptance of Bar and Restaurant(20-50) did not differ significantly (p = 0.318). Overall, drivers were far more likely to accept low-cost, immediately usable food offers (carry-out and inexpensive restaurant coupons) than coffee-house, mid-range restaurant, or bar coupons. 

@@ -8,7 +8,7 @@ date: "2025-11-25"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 2. Does time of day relate to acceptance?
+## 2. Does time of day relate to acceptance? 
 
 Variables (Description): time (categorical: 5 levels — morning, afternoon, evening, late night, unknown); acceptance (binary)	
 

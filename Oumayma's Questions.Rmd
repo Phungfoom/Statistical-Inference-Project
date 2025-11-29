@@ -21,7 +21,6 @@ Hypotheses (H₀ / Hₐ):
   - Hₐ: At least one time-of-day group has a different mean acceptance.
 
 ```{r}
-library(dplyr)
 # Load data 
 data <- read.csv("in-vehicle-coupon-rec.csv")
 head(data)
@@ -32,15 +31,15 @@ head(data)
 data$time <- factor(data$time, levels = c("7AM", "10AM", "2PM", "6PM", "10PM"), ordered = TRUE)
 
 # Run one-way ANOVA to test if mean acceptance differs by time of day
-summary(aov(Y ~ time, data = d))
+summary(aov(Y ~ time, data = data))
 
 # Tukey HSD post-hoc test - shows exactly WHICH times differ from each other
-TukeyHSD(aov(Y ~ time, data = d))
+TukeyHSD(aov(Y ~ time, data = data))
 # Plot the Tukey results – visual confidence intervals of all pairwise differences
-plot(TukeyHSD(aov(Y ~ time, data = d))) # Any interval that does NOT cross zero = statistically significant difference
+plot(TukeyHSD(aov(Y ~ time, data = data))) # Any interval that does NOT cross zero = statistically significant difference
 
 # Calculate acceptance rate (%) and sample size for each time 
-temp   <- table(d$time, d$Y)           # crosstab: rows = time, columns = 0/1
+temp   <- table(data$time, data$Y)           # crosstab: rows = time, columns = 0/1
 rates  <- prop.table(temp, margin = 1) # row percentages
 rates  <- rates[, "1"]                 # keep only the "accepted" column
 n_obs  <- margin.table(temp, margin = 1)
@@ -71,16 +70,16 @@ Hypotheses (H₀ / Hₐ):
 data$coupon <- factor(data$coupon)
 
 # One-way ANOVA to test if acceptance differs by coupon type
-summary(aov(Y ~ coupon, data = d))
+summary(aov(Y ~ coupon, data = data))
 
 # Tukey HSD post-hoc test – shows exactly WHICH coupon types differ
-TukeyHSD(aov(Y ~ coupon, data = d))
+TukeyHSD(aov(Y ~ coupon, data = data))
 
 # Plot Tukey results – visual of all pairwise differences
-plot(TukeyHSD(aov(Y ~ coupon, data = d))) # Intervals not crossing zero = significant difference at p < 0.05
+plot(TukeyHSD(aov(Y ~ coupon, data = data))) # Intervals not crossing zero = significant difference at p < 0.05
 
 # Calculate acceptance rate and sample size for each coupon type
-temp_table   <- table(d$coupon, d$Y)                    # Crosstab: coupon vs accept/reject
+temp_table   <- table(data$coupon, data$Y)                    # Crosstab: coupon vs accept/reject
 accept_rate  <- prop.table(temp_table, margin = 1)[, "1"]   # Acceptance % per coupon
 n_per_coupon <- margin.table(temp_table, margin = 1)        # Number of offers per type
 
@@ -96,4 +95,18 @@ result_coupon <- data.frame(
 result_coupon[order(-result_coupon$Acceptance_Rate), ]
 ```
 
-The one-way ANOVA revealed a highly significant association between coupon type and acceptance rate (F(4, 12679) = 234.5, p < 2e-16). Tukey’s HSD post-hoc comparisons (95% family-wise confidence level) showed that acceptance rates for Carry out & Take away (71.6%) and Restaurant(<20) (70.7%) were virtually identical and not significantly different from each other (p = 0.208), but both were significantly higher than all other coupon types (p < 0.001). Coffee House coupons (49.9%) had moderate acceptance, significantly higher than both Restaurant(20-50) (44.1%) and Bar (41.0%) coupons (p < 0.001), whereas acceptance of Bar and Restaurant(20-50) did not differ significantly (p = 0.318). Overall, drivers were far more likely to accept low-cost, immediately usable food offers (carry-out and inexpensive restaurant coupons) than coffee-house, mid-range restaurant, or bar coupons. 
+
+The one-way ANOVA revealed a highly significant effect of coupon type on acceptance (F(4, 12679) = 234.5, p < 2e-16). Tukey’s HSD post-hoc tests showed that acceptance rates for Carry out & Take away (73.5%, n = 2,393) and Restaurant(<20) (70.7%, n = 2,786) are statistically indistinguishable from each other (p is about 0.208) yet both are dramatically and significantly higher than all remaining coupon types (all p < 0.001). Coffee House coupons achieve moderate acceptance (49.9%, n = 3,996), which is still significantly better than both Restaurant(20–50) (44.1%, n = 1,492) and Bar (41.0%, n = 2,017) coupons (p < 0.001), while the latter two do not differ significantly from each other (p = 0.318). In practical terms, customers are far more likely to accept coupons that offer low-cost, immediately usable food—carry-out/take-away and inexpensive restaurant deals—than coupons for coffee houses, mid-range restaurants, or bars. For maximum redemption rates, coupons should be targeted at carry-out/take-away transactions and small restaurants (<20 seats), whereas distribution at bars or medium-sized restaurants (20–50 seats) yields the poorest return. 
+
+
+
+
+
+
+
+
+
+
+
+
+

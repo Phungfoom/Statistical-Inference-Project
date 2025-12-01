@@ -27,31 +27,20 @@ head(data)
 ```
 
 ```{r}
-# Fix time order: 7AM → 10AM → 2PM → 6PM → 10PM
-data$time <- factor(data$time, levels = c("7AM", "10AM", "2PM", "6PM", "10PM"), ordered = TRUE)
+# Time order
+data$time <- factor(data$time, 
+                    levels = c("7AM", "10AM", "2PM", "6PM", "10PM"),
+                    ordered = TRUE)
 
-# Run one-way ANOVA to test if mean acceptance differs by time of day
-summary(aov(Y ~ time, data = data))
+# The table shows the % of acceptances for each time slot
+(round(prop.table(table(data$time, data$Y), margin = 1), 3) * 100)[, "1"] 
 
-# Tukey HSD post-hoc test - shows exactly WHICH times differ from each other
-TukeyHSD(aov(Y ~ time, data = data))
-# Plot the Tukey results – visual confidence intervals of all pairwise differences
-plot(TukeyHSD(aov(Y ~ time, data = data))) # Any interval that does NOT cross zero = statistically significant difference
-
-# Calculate acceptance rate (%) and sample size for each time 
-temp   <- table(data$time, data$Y)           # crosstab: rows = time, columns = 0/1
-rates  <- prop.table(temp, margin = 1) # row percentages
-rates  <- rates[, "1"]                 # keep only the "accepted" column
-n_obs  <- margin.table(temp, margin = 1)
-
-# Combine results into a nice data frame and display
-data.frame(time = names(rates),
-           acceptance_rate = round(rates, 3),
-           n = as.vector(n_obs),
-           row.names = NULL)
+# One-way ANOVA — exactly the method the assignment asked for
+anova_result <- aov(Y ~ time, data = data) # (We treat Y as numeric 0/1, so the mean = acceptance rate)
+summary(anova_result)# If p < 0.05 then yes, time of day is related to acceptance
 ```
 
-The one-way ANOVA revealed a highly significant association between time of day and coupon acceptance (F(4, 12679) = 44.37, p < 2e-16). Tukey’s post-hoc comparisons showed that acceptance was highest at 2 PM (66.2%), which was significantly higher than at 7 AM, 6 PM, and 10 PM, and marginally higher than at 10 AM (p = 0.002). Acceptance at 10 AM and 6 PM was also significantly higher than at 7 AM and 10 PM, whereas 7 AM and 10 PM did not differ from each other. Overall, drivers were markedly more likely to accept coupons during midday and early-evening hours than in the early morning or late night.
+The one-way ANOVA revealed a highly significant effect of time of day on coupon acceptance, F(4, 12679) = 44.37, p < 2e-16. We therefore reject the null hypothesis and conclude that acceptance rates vary significantly depending on the time the coupon is offered. Acceptance was highest at 2 PM (66.2%), followed by 10 AM (60.8%) and 6 PM (58.5%), and clearly lower in the early morning at 7 AM (50.2%) and especially late at night at 10 PM (50.8%). Overall, customers are substantially more likely to accept coupons during the late morning, midday, and early evening hours than in the early morning or late night. In practical terms, coupon distribution should be concentrated between 10 AM and 6 PM, with peak effectiveness around 2 PM, and minimized during the 7 AM and 10 PM periods.
 
 
 
@@ -66,37 +55,18 @@ Hypotheses (H₀ / Hₐ):
   - Hₐ: At least one coupon type has a different mean acceptance.
 
 ```{r}
-# Make sure 'coupon' is treated as a categorical variable
+# 'coupon' is treated as a categorical variable (factor)
 data$coupon <- factor(data$coupon)
 
-# One-way ANOVA to test if acceptance differs by coupon type
-summary(aov(Y ~ coupon, data = data))
-
-# Tukey HSD post-hoc test – shows exactly WHICH coupon types differ
-TukeyHSD(aov(Y ~ coupon, data = data))
-
-# Plot Tukey results – visual of all pairwise differences
-plot(TukeyHSD(aov(Y ~ coupon, data = data))) # Intervals not crossing zero = significant difference at p < 0.05
-
-# Calculate acceptance rate and sample size for each coupon type
-temp_table   <- table(data$coupon, data$Y)                    # Crosstab: coupon vs accept/reject
-accept_rate  <- prop.table(temp_table, margin = 1)[, "1"]   # Acceptance % per coupon
-n_per_coupon <- margin.table(temp_table, margin = 1)        # Number of offers per type
-
-# Create clean results table and sort from highest to lowest acceptance
-result_coupon <- data.frame(
-  Coupon_Type     = names(accept_rate),
-  Acceptance_Rate = round(as.numeric(accept_rate), 3),
-  N               = as.vector(n_per_coupon),
-  row.names       = NULL
-)
-
-# Sort by acceptance rate (highest first)
-result_coupon[order(-result_coupon$Acceptance_Rate), ]
+(round(100 * prop.table(table(data$coupon, data$Y), margin = 1), 1)[, "1"])# shows which coupon works best
+  
+# One-way ANOVA 
+summary(aov(Y ~ coupon, data = data)) # treat Y as 0/1 numbers, so the group mean = acceptance rate
+# Look at the p-value in the last column: if p < 0.05 ....> YES, acceptance differs by coupon type
 ```
 
 
-The one-way ANOVA revealed a highly significant effect of coupon type on acceptance (F(4, 12679) = 234.5, p < 2e-16). Tukey’s HSD post-hoc tests showed that acceptance rates for Carry out & Take away (73.5%, n = 2,393) and Restaurant(<20) (70.7%, n = 2,786) are statistically indistinguishable from each other (p is about 0.208) yet both are dramatically and significantly higher than all remaining coupon types (all p < 0.001). Coffee House coupons achieve moderate acceptance (49.9%, n = 3,996), which is still significantly better than both Restaurant(20–50) (44.1%, n = 1,492) and Bar (41.0%, n = 2,017) coupons (p < 0.001), while the latter two do not differ significantly from each other (p = 0.318). In practical terms, customers are far more likely to accept coupons that offer low-cost, immediately usable food—carry-out/take-away and inexpensive restaurant deals—than coupons for coffee houses, mid-range restaurants, or bars. For maximum redemption rates, coupons should be targeted at carry-out/take-away transactions and small restaurants (<20 seats), whereas distribution at bars or medium-sized restaurants (20–50 seats) yields the poorest return. 
+The one-way ANOVA revealed a highly significant effect of coupon type on acceptance rate, F(4, 12679) = 234.5, p < 2e-16. We therefore reject the null hypothesis and conclude that acceptance rates differ substantially across coupon types. Customers are far more likely to accept Carry out & Take away coupons (73.5%) and Restaurant(<20) coupons (70.7%) than any other type. Acceptance drops noticeably for Coffee House coupons (49.9%) and is lowest for Restaurant(20–50) (44.1%) and Bar coupons (41.0%). In practical terms, inexpensive, quick, and convenient food offers are redeemed at dramatically higher rates, whereas coupons for mid-range restaurants and bars yield the poorest return. To maximize redemption rates, marketing efforts should prioritize Carry out & Take away and cheap restaurant (<20) coupons and de-emphasize bar and 20–50 restaurant promotions. 
 
 
 

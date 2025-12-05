@@ -94,3 +94,5 @@ Note: For these interpretations, we used "cheap restaurant" for restaurants cost
 4.  Compared to the baseline, those who never visit cheap restaurants had $319$% higher odds to accept a coupon ($p \approx 0.000005$). The trend from our previous two comparisons seems to continue; "never visit-ors" happily accept coupons to somewhere they appear to not care much for.
 
 5.  Once again, the trend continues. Even in expensive restaurants, those who never visit had $198$% higher odds of accepting such a coupon compared to the baseline ($p \approx 0.000001$).
+
+Overall, it was clear that visit frequencies affect accepting the matching coupon type, as evidenced by the numerous significant comparisons and extreme odds ratios.

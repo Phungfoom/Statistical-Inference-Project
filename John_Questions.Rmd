@@ -1,0 +1,96 @@
+---
+title: "John_Questions"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+### 1. Does expiration length affect acceptance?
+
+$H_0:$ The mean acceptance is equal for $1$-day and $2$-hour coupons, i.e., $\mu_{2h} - \mu_{1d} = 0$.
+
+$H_A:$ The mean acceptance differs between expiration lengths, i.e., $\mu_{2h} - \mu_{1d} \neq 0$.
+
+**Justification:** Since observations are IID, there is exchangeability between groups, and the sample size is large, we will conduct a test for the difference in proportions between $1$-day and $2$-hour coupons using bootstrap under the null.
+
+```{r}
+# Load data:
+coupons <- read.csv('in-vehicle-coupon-rec.csv')
+
+# Verify sample size is large:
+dim(coupons)
+
+# Conduct bootstrap:
+two_hour <- coupons %>% filter(expiration == '2h') %>% select(Y) 
+one_day <- coupons %>% filter(expiration == '1d') %>% select(Y)
+
+dif_proportion_obs <- mean(two_hour$Y)-mean(one_day$Y)
+dif_proportion_obs
+
+B <- 10000
+dif_proportion_boot <- numeric(B)
+n_2h <- length(two_hour$Y)
+n_1d <- length(one_day$Y)
+pool <- c(two_hour$Y, one_day$Y)
+
+for (i in 1:B) {
+  boot_pool <- sample(pool, n_2h+n_1d, replace=TRUE)
+  boot_2h <- sample(boot_pool, n_2h, replace=TRUE)
+  boot_1d <- sample(boot_pool, n_1d, replace=TRUE)
+  dif_proportion_boot[i] <- mean(boot_2h)-mean(boot_1d)
+}
+
+p_value <- mean(abs(dif_proportion_boot) >= abs(dif_proportion_obs))
+
+# Display p-value:
+p_value
+```
+
+**Interpretation:**
+
+The observed difference in acceptance proportions was $\mu_{2h} - \mu_{1d} = -0.1296$, and the bootstrap test under the null resulted in a very low p-value of $p < 0.0001$. With a significance level of $\alpha = 0.05$, this suggests that the true difference in acceptance proportions is not equal to zero, that is, expiration length does affect acceptance.
+
+------------------------------------------------------------------------
+
+### 5. Do past visit frequencies predict accepting the matching coupon type?
+
+$H_0:$ The visit frequency and coupon type have no effect on mean acceptance.
+
+$H_A:$ The visit frequency or coupon type significantly affect acceptance.
+
+**Justification:** We will perform a logistic regression. The assumptions for this method are met because we have a large sample size, independent observations, and a binary response variable.
+
+**Explanation:** We first had to create a new column that matched the restaurant type of the coupon to the visit frequency of that restaurant type. Using the output of the logistic regression, we can analyze the p-values from the summary and the odds ratios from the coefficients output. The output is long, so we commented it out after making our analysis.
+
+```{r}
+# New column creation:
+coupons <- coupons %>%
+  mutate(
+    visit_freq = case_when(
+      coupon == "Coffee House" ~ CoffeeHouse,
+      coupon == "Bar" ~ Bar,
+      coupon == "Carry out & Take away" ~ CarryAway,
+      coupon == "Restaurant(20-50)" ~ Restaurant20To50,
+      coupon == "Restaurant(<20)" ~ RestaurantLessThan20))
+
+unique(coupons$coupon)
+model <- glm(Y ~ coupon * visit_freq, family = binomial, data = coupons)
+# summary(model)
+# exp(coef(model))
+```
+
+**Interpretation:** There were several instances where past visit frequencies had large effects. In fact, out of the $24$ comparisons displayed by the model summary, $15$ of them were significant at the $\alpha=0.05$ significance level. The visit frequency reference level was those who visited a given restaurant type one to three times per month, and the restaurant type reference level was Bars. That is to say, we'll be making all comparisons to a baseline group, those who visit bars $1$-$3$ times per month. We chose five of the most significant (lowest p-value) comparisons to interpret:
+
+Note: For these interpretations, we used "cheap restaurant" for restaurants costing less than \$$20$ and "expensive restaurant" for restaurants costing between \$$20$ and \$$50$.
+
+1.  In general, those who reported "never visit" had $87$% lower odds to accept the coupon compared to the baseline ($p\approx 0$). This makes sense since one would probably not accept a coupon to a restaurant they never go to anyways.
+
+2.  Compared to the baseline, those who visited cheap restaurants less than once per month had $101$% higher odds to accept a coupon for a cheap restaurant ($p\approx 0.0001$). This seems to contradict the notion from our previous comparison; instead of people who go to this type of restaurant less having smaller odds to accept a coupon for them, the opposite happened and they were much more likely to accept. This could be due to the restaurant type. That is, maybe these cheaper restaurants, perhaps with lower quality food, are something that people would not spend their own money on, but they would be happy with getting a cheap or free meal with a coupon.
+
+3.  Those who never order carry out had $753$% higher odds to accept a coupon than the baseline ($p \approx 0.000001$). This comparison seems to build on our previous one in that despite the group in question never ordering carry out, they were astronomically more likely to accept a coupon. We think this could be because they don't value carry out food enough to spend their own money on it (perhaps they think it's too unhealthy, or some other reason), but if given the opportunity for free or cheap food with a coupon, they wouldn't mind having a cheat day.
+
+4.  Compared to the baseline, those who never visit cheap restaurants had $319$% higher odds to accept a coupon ($p \approx 0.000005$). The trend from our previous two comparisons seems to continue; "never visit-ors" happily accept coupons to somewhere they appear to not care much for.
+
+5.  Once again, the trend continues. Even in expensive restaurants, those who never visit had $198$% higher odds of accepting such a coupon compared to the baseline ($p \approx 0.000001$).

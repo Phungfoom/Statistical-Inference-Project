@@ -11,7 +11,7 @@
 
 
 
-<title>Final Report</title>
+<title>Who Says Yes to Coupons? A Statistical Study of Drivers’ Acceptance</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -348,14 +348,18 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">Final Report</h1>
+<h1 class="title toc-ignore">Who Says Yes to Coupons? A Statistical
+Study of Drivers’ Acceptance</h1>
 
 </div>
 
 
-<p><strong>Who Says Yes to Coupons? A Statistical Study of Drivers’
-Acceptance</strong></p>
-<p>Thomas Linden, John Nobles, Phung Tran, Oumayma Ben Aoun</p>
+<div id="by-thomas-linden-john-nobles-phung-tran-oumayma-ben-aoun" class="section level4">
+<h4>By Thomas Linden, John Nobles, Phung Tran, Oumayma Ben Aoun</h4>
+<hr />
+</div>
+<div id="introduction" class="section level3">
+<h3>Introduction</h3>
 <p>The project goal is to predict whether a driver will accept a coupon
 recommended to them based of the type of coupon, demographic profile,
 and conditions such as weather, time, etc., with data from the UC Irvine
@@ -381,6 +385,8 @@ on the Central Limit Theorem. For other questions with multiple
 categories, the F statistic from ANOVA indicates variation between the
 groups. Bootstrapping and Permutations testes were used to validate
 findings where assumptions were violated.</p>
+<hr />
+</div>
 <div id="does-expiration-length-affect-acceptance" class="section level3">
 <h3>1. Does expiration length affect acceptance?</h3>
 <p><span class="math inline">\(H_0:\)</span> The mean acceptance is
@@ -1089,12 +1095,6 @@ kable(
   age_income_counts,
   caption = &quot;Counts by Income (rows) and Age (columns)&quot;
 )</code></pre>
-<pre><code>## Warning in attr(x, &quot;align&quot;): &#39;xfun::attr()&#39; is deprecated.
-## Use &#39;xfun::attr2()&#39; instead.
-## See help(&quot;Deprecated&quot;)</code></pre>
-<pre><code>## Warning in attr(x, &quot;format&quot;): &#39;xfun::attr()&#39; is deprecated.
-## Use &#39;xfun::attr2()&#39; instead.
-## See help(&quot;Deprecated&quot;)</code></pre>
 <table>
 <caption>Counts by Income (rows) and Age (columns)</caption>
 <thead>
@@ -1241,12 +1241,6 @@ kable(
   digits  = 3,
   caption = &quot;Proportion accepted (Y) by Income (rows) and Age (columns)&quot;
 )</code></pre>
-<pre><code>## Warning in attr(x, &quot;align&quot;): &#39;xfun::attr()&#39; is deprecated.
-## Use &#39;xfun::attr2()&#39; instead.
-## See help(&quot;Deprecated&quot;)</code></pre>
-<pre><code>## Warning in attr(x, &quot;format&quot;): &#39;xfun::attr()&#39; is deprecated.
-## Use &#39;xfun::attr2()&#39; instead.
-## See help(&quot;Deprecated&quot;)</code></pre>
 <table>
 <caption>Proportion accepted (Y) by Income (rows) and Age
 (columns)</caption>
@@ -1534,8 +1528,26 @@ and income jointly relate to coupon acceptance through a non-additive
 interaction.</p>
 </div>
 </div>
-<div id="conclusion-here" class="section level1">
-<h1>CONCLUSION HERE</h1>
+<div id="conclusion" class="section level3">
+<h3>Conclusion</h3>
+<p>We employed bootstrapping and other statistical methods to address
+insightful questions related to our chosen coupon data. As a result of
+our analysis, we discovered multiple significant relationships in our
+data, including how coupon type, restaurant frequency, time of day, and
+types of passengers in the car affect acceptance rate. Many of these
+associations were logical and unsurprising; however, we found some that
+seemed to defy expectations, ultimately demonstrating the power and
+importance of statistical inference for uncovering relationships that
+wouldn’t have been noticed otherwise.</p>
+</div>
+<div id="references" class="section level3">
+<h3>References</h3>
+<p>Aché, M. (2020). in-vehicle coupon recommendation [Data set]. Kaggle.
+Retrieved December 5, 2025, from <a href="https://www.kaggle.com/datasets/mathurinache/invehicle-coupon-recommendation" class="uri">https://www.kaggle.com/datasets/mathurinache/invehicle-coupon-recommendation</a></p>
+<p>Wang, T., Rudin, C., Doshi-Velez, F., Liu, Y., Klampfl, E., &amp;
+MacNeille, P. (2017). A Bayesian framework for learning rule sets for
+interpretable classification. The Journal of Machine Learning Research,
+18(1), 2357–2393.</p>
 </div>
 
 

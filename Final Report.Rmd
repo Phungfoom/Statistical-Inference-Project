@@ -1,5 +1,5 @@
 ---
-title: "Final Report"
+title: "Who Says Yes to Coupons? A Statistical Study of Drivers' Acceptance"
 output: html_document
 ---
 
@@ -11,19 +11,22 @@ library(testequavar)
 library(kableExtra)
 ```
 
-**Who Says Yes to Coupons? A Statistical Study of Drivers' Acceptance**
+#### By Thomas Linden, John Nobles, Phung Tran, Oumayma Ben Aoun
 
-Thomas Linden, John Nobles, Phung Tran, Oumayma Ben Aoun
+------------------------------------------------------------------------
 
-The project goal is to predict whether a driver will accept a coupon recommended to them based of the type of coupon, demographic profile, and conditions such as weather, time, etc., with data from the UC Irvine Machine Learning Repository.  
+### Introduction
+
+The project goal is to predict whether a driver will accept a coupon recommended to them based of the type of coupon, demographic profile, and conditions such as weather, time, etc., with data from the UC Irvine Machine Learning Repository.
 
 ```{r echo=FALSE}
 coupons <- read.csv('in-vehicle-coupon-rec.csv')
 colnames(coupons)
 ```
 
-Statistical methods used to compare data are, Bootstrapping, ANOVA (with a Tukey post-hoc test), logistic regression, and permutation testing. These test were chosen to test the relationship between driving contexts and the binary decision to accept or reject a coupon. 
-Both parametric (ANOVA, Logistic Regression) and non parametric (Bootstrapping, Permutation) approaches were used. This is because the outcome between specific driving contexts are binary, with accept (Y = 1), or reject (Y = 0) a coupon.The large sample size allows us to rely on the Central Limit Theorem. For other questions with multiple categories, the F statistic from ANOVA indicates variation between the groups. Bootstrapping and Permutations testes were used to validate findings where assumptions were violated. 
+Statistical methods used to compare data are, Bootstrapping, ANOVA (with a Tukey post-hoc test), logistic regression, and permutation testing. These test were chosen to test the relationship between driving contexts and the binary decision to accept or reject a coupon. Both parametric (ANOVA, Logistic Regression) and non parametric (Bootstrapping, Permutation) approaches were used. This is because the outcome between specific driving contexts are binary, with accept (Y = 1), or reject (Y = 0) a coupon.The large sample size allows us to rely on the Central Limit Theorem. For other questions with multiple categories, the F statistic from ANOVA indicates variation between the groups. Bootstrapping and Permutations testes were used to validate findings where assumptions were violated.
+
+------------------------------------------------------------------------
 
 ### 1. Does expiration length affect acceptance?
 
@@ -242,7 +245,7 @@ ggplot(group_mean, aes(x = time, y = Y, group = dir, color = dir)) + geom_line(s
   theme_minimal()
 ```
 
-#### Interpretation 
+#### Interpretation
 
 There is no blue dot for on the left side representing Long Time (\> 25) min. That means there are no drivers who were even offered a coupon that has a long drive **and** in the same direction.
 
@@ -798,4 +801,12 @@ ggplot(new_grid,
 
 Using the fitted logistic model, we used predict() to compute model-based acceptance probabilities for every Age × Income combination. The predicted-probability heatmap smooths out sampling noise and shows the same qualitative pattern as the raw proportions: higher acceptance for many younger age groups, lower acceptance for some older/high-income combinations, and no simple increasing or decreasing trend in either variable alone. This visualization reinforces the conclusion that age and income jointly relate to coupon acceptance through a non-additive interaction.
 
-# CONCLUSION HERE
+### Conclusion
+
+We employed bootstrapping and other statistical methods to address insightful questions related to our chosen coupon data. As a result of our analysis, we discovered multiple significant relationships in our data, including how coupon type, restaurant frequency, time of day, and types of passengers in the car affect acceptance rate. Many of these associations were logical and unsurprising; however, we found some that seemed to defy expectations, ultimately demonstrating the power and importance of statistical inference for uncovering relationships that wouldn’t have been noticed otherwise.
+
+### References
+
+Aché, M. (2020). in-vehicle coupon recommendation [Data set]. Kaggle. Retrieved December 5, 2025, from <https://www.kaggle.com/datasets/mathurinache/invehicle-coupon-recommendation>
+
+Wang, T., Rudin, C., Doshi-Velez, F., Liu, Y., Klampfl, E., & MacNeille, P. (2017). A Bayesian framework for learning rule sets for interpretable classification. The Journal of Machine Learning Research, 18(1), 2357–2393.

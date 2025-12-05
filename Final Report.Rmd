@@ -123,6 +123,12 @@ $H_0$: Travel time and direction have no effect on mean acceptance.
 
 $H_A$: Travel time or direction significantly affect acceptance rates.
 
+#### Justification
+
+Bootstrapping is used to estimate the difference in proportions between same vs. opposite direction and short vs. long time drive, by creating a 95% Confidence Interval.
+
+Since the outcome variable Y is binary, the mean represents the proportion of acceptance without relying on assumptions of normality.
+
 ```{r}
 # This will be the data variable used for questions 3 & 7
 coupon_data <- read.csv("in-vehicle-coupon-rec.csv")

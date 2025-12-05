@@ -353,13 +353,34 @@ display: none;
 </div>
 
 
-<div id="introduction-andor-abstract-here" class="section level1">
-<h1>INTRODUCTION and/or ABSTRACT HERE</h1>
-</div>
-<div id="description-of-variables-other-data-context-here-with-code-like-head-and-colnames" class="section level1">
-<h1>Description of variables, other data context HERE (with code like
-head() and colnames()</h1>
-<hr />
+<p><strong>Who Says Yes to Coupons? A Statistical Study of Drivers’
+Acceptance</strong></p>
+<p>Thomas Linden, John Nobles, Phung Tran, Oumayma Ben Aoun</p>
+<p>The project goal is to predict whether a driver will accept a coupon
+recommended to them based of the type of coupon, demographic profile,
+and conditions such as weather, time, etc., with data from the UC Irvine
+Machine Learning Repository.</p>
+<pre><code>##  [1] &quot;destination&quot;          &quot;passanger&quot;            &quot;weather&quot;             
+##  [4] &quot;temperature&quot;          &quot;time&quot;                 &quot;coupon&quot;              
+##  [7] &quot;expiration&quot;           &quot;gender&quot;               &quot;age&quot;                 
+## [10] &quot;maritalStatus&quot;        &quot;has_children&quot;         &quot;education&quot;           
+## [13] &quot;occupation&quot;           &quot;income&quot;               &quot;car&quot;                 
+## [16] &quot;Bar&quot;                  &quot;CoffeeHouse&quot;          &quot;CarryAway&quot;           
+## [19] &quot;RestaurantLessThan20&quot; &quot;Restaurant20To50&quot;     &quot;toCoupon_GEQ5min&quot;    
+## [22] &quot;toCoupon_GEQ15min&quot;    &quot;toCoupon_GEQ25min&quot;    &quot;direction_same&quot;      
+## [25] &quot;direction_opp&quot;        &quot;Y&quot;</code></pre>
+<p>Statistical methods used to compare data are, Bootstrapping, ANOVA
+(with a Tukey post-hoc test), logistic regression, and permutation
+testing. These test were chosen to test the relationship between driving
+contexts and the binary decision to accept or reject a coupon. Both
+parametric (ANOVA, Logistic Regression) and non parametric
+(Bootstrapping, Permutation) approaches were used. This is because the
+outcome between specific driving contexts are binary, with accept (Y =
+1), or reject (Y = 0) a coupon.The large sample size allows us to rely
+on the Central Limit Theorem. For other questions with multiple
+categories, the F statistic from ANOVA indicates variation between the
+groups. Bootstrapping and Permutations testes were used to validate
+findings where assumptions were violated.</p>
 <div id="does-expiration-length-affect-acceptance" class="section level3">
 <h3>1. Does expiration length affect acceptance?</h3>
 <p><span class="math inline">\(H_0:\)</span> The mean acceptance is
@@ -1068,6 +1089,12 @@ kable(
   age_income_counts,
   caption = &quot;Counts by Income (rows) and Age (columns)&quot;
 )</code></pre>
+<pre><code>## Warning in attr(x, &quot;align&quot;): &#39;xfun::attr()&#39; is deprecated.
+## Use &#39;xfun::attr2()&#39; instead.
+## See help(&quot;Deprecated&quot;)</code></pre>
+<pre><code>## Warning in attr(x, &quot;format&quot;): &#39;xfun::attr()&#39; is deprecated.
+## Use &#39;xfun::attr2()&#39; instead.
+## See help(&quot;Deprecated&quot;)</code></pre>
 <table>
 <caption>Counts by Income (rows) and Age (columns)</caption>
 <thead>
@@ -1214,6 +1241,12 @@ kable(
   digits  = 3,
   caption = &quot;Proportion accepted (Y) by Income (rows) and Age (columns)&quot;
 )</code></pre>
+<pre><code>## Warning in attr(x, &quot;align&quot;): &#39;xfun::attr()&#39; is deprecated.
+## Use &#39;xfun::attr2()&#39; instead.
+## See help(&quot;Deprecated&quot;)</code></pre>
+<pre><code>## Warning in attr(x, &quot;format&quot;): &#39;xfun::attr()&#39; is deprecated.
+## Use &#39;xfun::attr2()&#39; instead.
+## See help(&quot;Deprecated&quot;)</code></pre>
 <table>
 <caption>Proportion accepted (Y) by Income (rows) and Age
 (columns)</caption>
@@ -1499,7 +1532,6 @@ combinations, and no simple increasing or decreasing trend in either
 variable alone. This visualization reinforces the conclusion that age
 and income jointly relate to coupon acceptance through a non-additive
 interaction.</p>
-</div>
 </div>
 </div>
 <div id="conclusion-here" class="section level1">

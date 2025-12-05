@@ -11,11 +11,19 @@ library(testequavar)
 library(kableExtra)
 ```
 
-# INTRODUCTION and/or ABSTRACT HERE
+**Who Says Yes to Coupons? A Statistical Study of Drivers' Acceptance**
 
-# Description of variables, other data context HERE (with code like head() and colnames()
+Thomas Linden, John Nobles, Phung Tran, Oumayma Ben Aoun
 
-------------------------------------------------------------------------
+The project goal is to predict whether a driver will accept a coupon recommended to them based of the type of coupon, demographic profile, and conditions such as weather, time, etc., with data from the UC Irvine Machine Learning Repository.  
+
+```{r echo=FALSE}
+coupons <- read.csv('in-vehicle-coupon-rec.csv')
+colnames(coupons)
+```
+
+Statistical methods used to compare data are, Bootstrapping, ANOVA (with a Tukey post-hoc test), logistic regression, and permutation testing. These test were chosen to test the relationship between driving contexts and the binary decision to accept or reject a coupon. 
+Both parametric (ANOVA, Logistic Regression) and non parametric (Bootstrapping, Permutation) approaches were used. This is because the outcome between specific driving contexts are binary, with accept (Y = 1), or reject (Y = 0) a coupon.The large sample size allows us to rely on the Central Limit Theorem. For other questions with multiple categories, the F statistic from ANOVA indicates variation between the groups. Bootstrapping and Permutations testes were used to validate findings where assumptions were violated. 
 
 ### 1. Does expiration length affect acceptance?
 
